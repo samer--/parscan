@@ -161,22 +161,32 @@ module BottomUp (M: MONOID) = struct
     let rec zip_with : type a b c. (a -> b -> c) -> a t * b t -> c t = fun f -> function
       | (L x, L y) -> L (f x y)
       | (B a, B b) -> B (zip_with (curry (P.zip_with f)) (a, b))
-      | _ -> assert false
+      | _ -> assert false (* needed because depths are not constrained by types *)
 
     let rec unzip_with : type a b c. (a -> b * c) -> a t -> b t * c t =
       let leaf x = L x in
       let branch t = B t in
       fun f -> function
-      | L x -> (prod leaf leaf) (f x)
-      | B t -> (prod branch branch) (unzip_with (P.unzip_with f) t)
-
+        | L x -> (prod leaf leaf) (f x)
+        | B t -> (prod branch branch) (unzip_with (P.unzip_with f) t)
   end
 
   let rec scan : M.t T.t -> M.t T.t * M.t =
     let branch tp = T.B tp in
     let combine = branch % T.zip_with (P.map % M.add) % swap in function
-    | T.L x -> T.L M.zero, x
-    | T.B t -> ffst combine % assocl % fsnd scan % T.unzip_with P.scan @@ t
+      | T.L x -> T.L M.zero, x
+      | T.B t -> ffst combine % assocl % fsnd scan % T.unzip_with P.scan @@ t
+
+  let iota : int -> int T.t =
+    let rec beside : type a. a T.t P.t -> a P.t T.t = function
+      | ((T.L x), (T.L y)) -> T.L (x, y)
+      | ((T.B a), (T.B b)) -> T.B (beside (a, b))
+      | _ -> assert false in
+    let rec iota' = function
+      | 0 -> (T.L 1, 1)
+      | n -> let t, b = iota' (n-1) in
+             T.B (beside (t, (T.map ((+) b) t))), 2 * b
+    in fst % iota'
 end
 
 (* ---------------------------------------------------------------------
@@ -232,3 +242,6 @@ module Scan2Int  = Scan2(Int)
 module NScan1Int = Scan1(NoisyInt)
 module NScan2Int = Scan2(NoisyInt)
 module ScanDInt  = ScanD(Int)
+
+module TopDownInt  = TopDown(NoisyInt)
+module BottomUpInt = BottomUp(NoisyInt)
