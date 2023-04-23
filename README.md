@@ -19,7 +19,9 @@ type constructor `C` is, in Haskell-ish notation
 ```
 The talk looks at how the idea of scanning can be generalised from the familiar 
 (sequential) algorithm for scanning a list to more parallelisable structures for
-containter types built from different combinations of functors.
+containter types built from different combinations of functors. He starts by 
+looking at some rather complex and impenetrable looking UDA code for multithreaded 
+scan and works towards obtaining a much cleaner expression of the underlying idea.
     
 There are versions in O'Caml, Agda and Haskell.
 
@@ -37,7 +39,6 @@ vim with the `agda-vim` package from `derekelkins/agda-vim`. The binding
 Direct.^
 ((Direct.L 5 Direct.^ Direct.L 6) Direct.^
  (Direct.L 7 Direct.^ Direct.L 8))
-`let open Direct in scan (iota 4)` results in
 ```
 Doing a scan on this tree, `Direct` assume the additive monoid on the naturals, and
 so `let open Direct in scan (iota 3)` produces
