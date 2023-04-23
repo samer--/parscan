@@ -50,7 +50,7 @@ so `let open Direct in scan (iota 3)` produces
   (Direct.L 21 Direct.^ Direct.L 28)))
 , 36
 ```
-The two most suggestive implementations are in the modules `TopDown` and `BottomUp`,
+The two most elegant implementations are in the modules `TopDown` and `BottomUp`,
 which implement the 'pair of trees' and 'tree of pairs' approaches described by Elliot
 in his talk. Once the two tree data types have been defined and supplied with functions
 for mapping, zipping and unzipping, the two scan functions are remarkably similar. They
@@ -74,8 +74,8 @@ Each branch (`B`) is a pair (`_ # _`) of trees. Now using the 'bottom-up' tree, 
 in a tree of items of type A, a branch node is a tree of pairs, ie a tree of (A x A).
 What this means in practise is that a binary tree of depth, say 3, which has 8 leaves, starts
 with 3 levels of unary `B` constructors (ie not looking like a tree at all), and ends with a 
-single `L` constructor containing a pair of pair of pairs, so that the actual tree is 
-represented entirely as nested pairs. here is the result of a scan:
+single `L` constructor containing a pair of pairs of pairs, so that the actual tree is 
+represented entirely as nested pairs. Here is the result:
 ```
 > let open TopDown in let instance M = AddNat in scanT (iota 3)
 
@@ -87,7 +87,9 @@ BottomUp.B
 ```
 What the bottom-up tree makes easy in comparison with the top-down tree is computations
 on adjacent pairs of leaves, since each pair of leaves in the outer tree is a *single* leaf in
-the nested tree of pairs.
+the nested tree of pairs. While the top-down tree makes it easy to work on the *top* N levels 
+of the tree (eg by pattern matching), the bottom-up tree makes it easy to work on the *bottom*
+N levels of the tree, by digging through N levels of `B` constructors and then applying a map.
 
 What emerges from the Agda versions is that, if the type of container is an algberaic type
 ```
@@ -107,11 +109,11 @@ a function to the first or second element of a pair.
 To talk through the right hand side of the `<+>`, it says, to do a scan over F (G a), we scan each
 of the sub-collections inside the outer `F` container and unzip the results to get two `F` containers
 that are the same shape. The first contains `G` sub-containers  containing the results of the
-many little scans (which are all G-scans). The seconds contains the total sum for each of those 
-sub-scans - this is itself then scanned, this time using an F-scan, to get cumululative totals
+many little scans (let's call them G-scans). The second contains the totals for each of those 
+sub-scans. This is itself then scanned, this time using an F-scan, to get cumululative totals
 at the coarser level implied by the outer F-container. Then we rearrange things to bring the two 
 F-containers together: one containing many sub-scans and the other containing the cumuluative
-coarse grained scan. Finally, we zip these together at the F-level, in each casing using map to
+coarse grained scan. Finally, we zip these together at the F-level, in each case using `map` to
 add the coarse grained cumulative total to all the elements in each sub-scan.
 
 Described in this way, this would *seem* to generalise to containers built from any arrangement of
