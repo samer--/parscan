@@ -9,8 +9,7 @@ module type FUNCTOR = sig
   val map : ('a -> 'b) -> 'a t -> 'b t
 end
 
-type 'a pair = 'a * 'a
-
+(* basic utilities *)
 let id x = x
 let (%>) f g x = g (f x)
 let (%)  f g x = f (g x)
@@ -21,24 +20,28 @@ let swap (x,y) = (y,x)
 let prod f g (x, y) = (f x, g y)
 let curry f x y = f (x, y)
 
+type 'a pair = 'a * 'a
+
 module Pair = struct
   type 'a t = 'a pair
 
   let map f (x1,x2) = f x1, f x2
-  let scan : type a. (module MONOID with type t=a) -> a t -> a t * a
-    = fun (module M) (x1,x2) -> (M.zero,x1), M.add x1 x2
   let unzip (((x1,y1), (x2,y2)) : ('a * 'b) t): 'a t * 'b t  = (x1,x2), (y1,y2)
   let unzip_with f = unzip % map f
   let zip_with : ('a -> 'b -> 'c) -> 'a t * 'b t -> 'c t =
     fun f ((x1,x2), (y1,y2)) -> (f x1 y1, f x2 y2)
+
+  let scan : type a. (module MONOID with type t=a) -> a t -> a t * a
+    = fun (module M) (x1,x2) -> (M.zero,x1), M.add x1 x2
 end
 
 module PairM (M: MONOID) = struct
+  (* Pair but with scan bound to the given monoid as a first class module *)
   include Pair
-  let scan (x1,x2) = (M.zero,x1), M.add x1 x2
+  let scan = scan (module M)
 end
 
-
+(* This part provides operation counting as an effect by using delimited continuations *)
 (* -- universal type, taken from Filinski -- *)
 module Dynamic = struct
   exception Dynamic
@@ -54,6 +57,7 @@ module Dynamic = struct
 end
 
 module NoisyInt = struct
+  (* It's noisy because it counts the number of additions performed *)
   open Delimcc
 
   type t = int
@@ -67,12 +71,9 @@ module NoisyInt = struct
     ffst outd @@ push_prompt p @@ fun () -> (ind (f ()), 0)
 end
 
-(* boring binary tree *)
-(* type 'a tree = | L of 'a | B of 'a tree * 'a tree *)
+(* ----------------------------------------------------------------------*)
 
-(* let rec tmap (f: 'a -> 'b): 'a tree -> 'b tree = function *)
-(*   | L x -> L (f x) *)
-(*   | B (a,b) -> B (tmap f a, tmap f b) *)
+(* boring old binary tree *)
 
 module Tree = struct
   type 'a t = | L of 'a | B of 'a t * 'a t
@@ -117,6 +118,8 @@ module Scan2 (M: MONOID) = struct
         | n -> let t, b = iota' (n-1) in (B (t, Tree.map (Pair.map ((+) b)) t), 2*b)
     in fst (iota' (n - 1))
 end
+
+(* -----------------------------------------------------------------------*)
 
 module TopDown (M: MONOID) = struct
   module P = PairM (M)
@@ -176,7 +179,10 @@ module BottomUp (M: MONOID) = struct
     | T.B t -> ffst combine % assocl % fsnd scan % T.unzip_with P.scan @@ t
 end
 
-(* ------------------------------------------------- *)
+(* ---------------------------------------------------------------------
+ * Here we do some tricksy stuff in order to get the depth of the tree into
+ * its type as a phantom type parameter.
+ *)
 
 (* Type level naturals *)
 type z
