@@ -126,16 +126,62 @@ functors, as long as each functor supports zip and unzip.
 
 ## Ocaml version
 
-Requires package `delimcc` (do `opam install delimcc`), but this is only
-needed for the tooling that counts additions performed when doing a scan.
+Quite similar in spirit to the Agda version, but without the implicit arguments, so
+that various versions are represented as functors parameterised by a MONOID module.
+The examples use `Int` or `NoisyInt` as an additive monoid. `NoisyInt`
+requires package `delimcc` (do `opam install delimcc`), in order to implement
+couting of addition operations as an effect.
 
 To build and then run in utop:
 ```bash
     dune build
     dune utop
 ```
-Or to run without compiling, just run `utop` - the `.ocamlinit` file will
-load the `delimcc` package and `scan.ml`.
+then do `open Parscan`. Alternatively, to run without compiling, just run `utop`
+- the `.ocamlinit` file will load the `delimcc` package and `scan.ml`.
+Once in utop, you can run scans. For example, we can do a scan on a top-down tree
+and get the number of additions performed like this:
+```
+utop # NoisyInt.counting_adds (fun () -> TopDownInt.(scan (iota 3)));;
+- : (int TopDownInt.T.t * int) * int =
+((TopDownInt.T.B
+   (TopDownInt.T.B
+     (TopDownInt.T.B (TopDownInt.T.L 0, TopDownInt.T.L 1),
+      TopDownInt.T.B (TopDownInt.T.L 3, TopDownInt.T.L 6)),
+    TopDownInt.T.B
+     (TopDownInt.T.B (TopDownInt.T.L 10, TopDownInt.T.L 15),
+      TopDownInt.T.B (TopDownInt.T.L 21, TopDownInt.T.L 28))),
+  36),
+ 31)
+```
+where as with a bottom up tree, we get
+```
+utop # NoisyInt.counting_adds (fun () -> BottomUpInt.(scan (iota 3)));;
+- : (int BottomUpInt.T.t * int) * int =
+((BottomUpInt.T.B
+   (BottomUpInt.T.B
+     (BottomUpInt.T.B
+       (BottomUpInt.T.L (((0, 1), (3, 6)), ((10, 15), (21, 28)))))),
+  36),
+ 21)
+```
+Notice the smaller number of additions required. The difference becomes more marked
+as we increase the size of the input:
+
+```
+utop # snd (NoisyInt.counting_adds (fun () -> TopDownInt.(scan (iota 8))));;
+- : int = 2303
+
+utop # snd (NoisyInt.counting_adds (fun () -> BottomUpInt.(scan (iota 8))));;
+- : int = 765
+```
+The former is O(N log N) in the size of the input, while the latter is O(N).
+
+### Depth constrained trees
+
+Towards the end of `scan.ml` there is an attempt to use a phantom type parameter to
+encode the depth of the tree in its type, to mimic the Agda version and provide more
+precise types.
 
 ## Haskell version
 
