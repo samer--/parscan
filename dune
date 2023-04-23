@@ -1,0 +1,7 @@
+(library
+ (name parscan)
+ (libraries base delimcc))
+
+(env
+  (dev
+    (flags (:standard -warn-error -A))))
