@@ -91,21 +91,22 @@ the nested tree of pairs. While the top-down tree makes it easy to work on the *
 of the tree (eg by pattern matching), the bottom-up tree makes it easy to work on the *bottom*
 N levels of the tree, by digging through N levels of `B` constructors and then applying a map.
 
-What emerges from the Agda versions is that, if the type of container is an algberaic type
+What emerges from the Agda versions is that, when the type of container is an algberaic type
 ```
     T a = a + F (G a)
 ``` 
 where `F` and/or `G` are 'scannable' functors (one or both of which might involve T),
-then, for monoidal types `a` with 0 and (+) as the 'zero' and 'add' operations of the monoid,
-then `T` is scannable with
+then, for monoidal types `a` with 0 and (+) as the 'zero' and 'add' operations of the monoid
+respectively, then `T` is scannable with
 ```
     scan = scan <+> first (zipWith (map . (+)) . swap) . assocl . second scan . unzipWith scan
 ```
-where f <+> g` is a function that applies f or g to whichever side of a sum type is provided,
+where `f <+> g` is a function that applies f or g to whichever side of a sum type is provided,
 and `Monoid a ^ x : a => scan x = (0, x)`, ie the scan for a leaf value is just a pair of zero
 and the value itself. `first` and `second` are as defined in Haskell's Arrow library, ie applying
 a function to the first or second element of a pair.
 
+The left-hand side of the `<+>` is just a scan over a leaf node, ie `scan x = (0, x)`.
 To talk through the right hand side of the `<+>`, it says, to do a scan over F (G a), we scan each
 of the sub-collections inside the outer `F` container and unzip the results to get two `F` containers
 that are the same shape. The first contains `G` sub-containers  containing the results of the
@@ -116,8 +117,9 @@ F-containers together: one containing many sub-scans and the other containing th
 coarse grained scan. Finally, we zip these together at the F-level, in each case using `map` to
 add the coarse grained cumulative total to all the elements in each sub-scan.
 
-Described in this way, this would *seem* to generalise to containers built from any arrangement of
-functors, as long as each functor supports zip and unzip.
+Described in this way, this would seem to generalise to containers built from any arrangement of
+functors, as long as each functor supports zip and unzip. This indeed what Conal goes on to
+do in his talk and I will aim to do in this Agda version a some point in the future.
 
 ### Todo in Agda version
 - The 'bash' tree as described in the talk.
@@ -182,9 +184,36 @@ The former is O(N log N) in the size of the input, while the latter is O(N).
 
 ### Depth constrained trees
 
-Towards the end of `scan.ml` there is an attempt to use a phantom type parameter to
+In the bottom half of `scan.ml` there are some versions which use a phantom type parameter to
 encode the depth of the tree in its type, to mimic the Agda version and provide more
-precise types.
+precise types. The modules `BoundedTopDown` and `BoundedBottomUp` do this, as well as taking
+the opportunity to replace the complicated `iota` function with a much simpler `const` function,
+which fills a tree with a constant value in all the leaves. `iota` can then be implemented
+simply by scanning a tree filled with 1s. Unfortunately, specifying the depth of a tree can
+no longer be done with an `int`, but with a Piano encoded natural, eg `Zero`, `Suc Zero`, etc.
+For example:
+```
+utop # BTopDownInt.(iota (Suc (Suc (Suc Zero))));;
+- : (zero suc suc suc, int) BTopDownInt.S.T.t * int =
+(BTopDownInt.S.T.B
+  (BTopDownInt.S.T.B
+    (BTopDownInt.S.T.B (BTopDownInt.S.T.L 0, BTopDownInt.S.T.L 1),
+     BTopDownInt.S.T.B (BTopDownInt.S.T.L 2, BTopDownInt.S.T.L 3)),
+   BTopDownInt.S.T.B
+    (BTopDownInt.S.T.B (BTopDownInt.S.T.L 4, BTopDownInt.S.T.L 5),
+     BTopDownInt.S.T.B (BTopDownInt.S.T.L 6, BTopDownInt.S.T.L 7))),
+ 31)
+```
+Here, 31 additions were required to scan over a top-down tree containing 8 1s.
+Using the bottom-up version, we get
+```
+utop # BBottomUpInt.(iota (Suc (Suc (Suc Zero))));;
+- : (zero suc suc suc, int) BBottomUpInt.T.t * int =
+(BBottomUpInt.T.B
+  (BBottomUpInt.T.B
+    (BBottomUpInt.T.B (BBottomUpInt.T.L (((0, 1), (2, 3)), ((4, 5), (6, 7)))))),
+ 21)
+```
 
 ## Haskell version
 
