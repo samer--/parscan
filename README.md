@@ -122,12 +122,12 @@ are (as long as they are scannable), and so would seem to generalise to containe
 many possible arrangements of functors, as long as each functor supports zip and unzip. 
 In the case of the top down tree, we have the recursive type
 ```math
-    T a = a + \mathit{Pair} T a
+    T a = a + \mathit{Pair}\,(T a)
 ```
 (where the left of the sum type is represented by a leaf node constructor `L` in the Agda code) 
 and for the bottom up tree we have
-```
-    T a = a + T (\mathit{Pair} a)
+```math
+    T a = a + T (\mathit{Pair}\, a)
 ```
 This is indeed what Conal goes on to do in his talk, considering how the scans for a number
 of basic funtors can be composed to get the scan for a composition of functors.
