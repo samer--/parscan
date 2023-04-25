@@ -13,11 +13,12 @@ end
 let id x = x
 let (%>) f g x = g (f x)
 let (%)  f g x = f (g x)
+
+let swap   (x,y) = (y,x)
 let ffst f (x,y) = (f x, y)
 let fsnd f (x,y) = (x, f y)
-let assocl (a,(b,c)) = (a,b), c
-let swap (x,y) = (y,x)
 let prod f g (x, y) = (f x, g y)
+let assocl (a,(b,c)) = ((a,b), c)
 let curry f x y = f (x, y)
 
 type 'a pair = 'a * 'a
@@ -25,6 +26,7 @@ type 'a pair = 'a * 'a
 module Pair = struct
   type 'a t = 'a pair
 
+  let const x = (x,x)
   let map f (x1,x2) = f x1, f x2
   let unzip (((x1,y1), (x2,y2)) : ('a * 'b) t): 'a t * 'b t  = (x1,x2), (y1,y2)
   let unzip_with f = unzip % map f
@@ -119,6 +121,12 @@ module Scan2 (M: MONOID) = struct
     in fst (iota' (n - 1))
 end
 
+(* some fully built modules *)
+module Scan1Int  = Scan1(Int)
+module Scan2Int  = Scan2(Int)
+module NScan1Int = Scan1(NoisyInt)
+module NScan2Int = Scan2(NoisyInt)
+
 (* -----------------------------------------------------------------------*)
 
 module TopDown (M: MONOID) = struct
@@ -189,59 +197,101 @@ module BottomUp (M: MONOID) = struct
     in fst % iota'
 end
 
+module TopDownInt  = TopDown(NoisyInt)
+module BottomUpInt = BottomUp(NoisyInt)
+
+
 (* ---------------------------------------------------------------------
  * Here we do some tricksy stuff in order to get the depth of the tree into
- * its type as a phantom type parameter.
+ * its type as a phantom type parameter. It means the compiler can detect when
+ * two trees are the same depth, eliminate the impossible case when zipping trees,
+ * and express the idea of shape-preserving tree transformations.
  *)
 
 (* Type level naturals *)
-type z
+type zero
 type 'a suc = S of 'a (* don't understand why we need a constructor *)
 
 (* Type AND value level naturals *)
 type 'n nat =
-  | Zero : z nat
-  | Succ : 'n nat -> 'n suc nat
+  | Zero : zero nat
+  | Suc : 'n nat -> 'n suc nat
 
+let suc n = Suc n
 
-(* A binary tree whose depth is determined by a type level
- * natural. We don't need nat as we don't need to match on
- * the natural number if we have an actual tree to match on.
- *)
-type ('d,'a) dtree =
-  | LL : 'a -> (z,'a) dtree
-  | BB : ('d,'a) dtree * ('d,'a) dtree -> ('d suc, 'a) dtree
+module BoundedTopDown (M: MONOID) = struct
+  (* A binary tree whose depth is determined by a type level natural. *)
+  module P = PairM (M)
+  module T = struct
+    type ('d,'a) t =
+      | L : 'a -> (zero,'a) t
+      | B : ('d,'a) t P.t -> ('d suc, 'a) t
 
-let rec dtmap : type d. ('a -> 'b) -> (d,'a) dtree -> (d,'b) dtree =
-  fun f -> function
-    | LL x -> LL (f x)
-    | BB (a,b) -> BB (dtmap f a, dtmap f b)
+    let rec map : type d. ('a -> 'b) -> (d,'a) t -> (d,'b) t =
+      fun f -> function
+        | L x  -> L (f x)
+        | B tp -> B (P.map (map f) tp)
 
-let rec diota : type d. d nat -> (d, int) dtree * int = function
-  | Zero -> (LL 1, 1)
-  | Succ n -> let t, b = diota n in (BB (t, dtmap ((+) b) t), 2*b)
+    let rec const: type d. d nat -> 'a -> (d,'a) t =
+      fun n x -> match n with
+        | Zero  -> L x
+        | Suc n -> B (P.const (const n x))
+  end
 
-let ( ~~ ) x = Succ x
-
-module ScanD (M: MONOID) = struct
-  open M
-  type 'd t = ('d, M.t) dtree
-
-  let rec scan : type d. d t -> d t * M.t = function
-    | LL x -> LL zero, x
-    | BB (a, b) ->
-      let a', at = scan a in
-      let b', bt = scan b in
-      BB (a', dtmap (add at) b'), (add at bt)
+  let rec scan : type d. (d, M.t) T.t -> (d, M.t) T.t * M.t =
+    let branch t = T.B t in function
+      | T.L x -> (T.L M.zero, x)
+      | T.B tp -> let combine = branch % P.zip_with (T.map % M.add) % swap in
+                  ffst combine % assocl % fsnd P.scan % P.unzip_with scan @@ tp
 end
 
-(* ------------------------------------------------------- *)
+module BoundedBottomUp (M: MONOID) = struct
+  (* A bottom up binary tree whose depth is determined by a type level natural. *)
+  module P = PairM (M)
+  module T = struct
+    type ('d,'a) t =
+      | L : 'a -> (zero,'a) t
+      | B : ('d,'a P.t) t -> ('d suc, 'a) t
 
-module Scan1Int  = Scan1(Int)
-module Scan2Int  = Scan2(Int)
-module NScan1Int = Scan1(NoisyInt)
-module NScan2Int = Scan2(NoisyInt)
-module ScanDInt  = ScanD(Int)
+    let branch t = B t
+    let leaf x = L x
 
-module TopDownInt  = TopDown(NoisyInt)
-module BottomUpInt = BottomUp(NoisyInt)
+    let rec map : type d a b. (a -> b) -> (d,a) t -> (d,b) t =
+      fun f -> function
+        | L x -> L (f x)
+        | B t -> B (map (P.map f) t)
+
+    let rec const: type d. d nat -> 'a -> (d,'a) t =
+      fun n x -> match n with
+      | Zero -> L x
+      | Suc n -> B (map P.const (const n x))
+
+    let rec zip_with : type a b c d. (a -> b -> c) -> (d,a) t * (d,b) t -> (d,c) t =
+      fun f -> function
+      | (L x, L y) -> L (f x y)
+      | (B a, B b) -> B (zip_with (curry (P.zip_with f)) (a, b))
+
+    let rec unzip_with : type a b c d. (a -> b * c) -> (d,a) t -> (d,b) t * (d,c) t =
+      fun f -> function
+        | L x -> (prod leaf leaf) (f x)
+        | B t -> (prod branch branch) (unzip_with (P.unzip_with f) t)
+  end
+
+  let rec scan : type d. (d, M.t) T.t -> (d, M.t) T.t * M.t = function
+      | T.L x -> (T.L M.zero, x)
+      | T.B t -> let combine = T.branch % T.zip_with (P.map % M.add) % swap in
+                 ffst combine % assocl % fsnd scan % T.unzip_with P.scan @@ t
+end
+
+module BTopDownInt = struct
+  module S = BoundedTopDown (NoisyInt)
+  let scan t = NoisyInt.counting_adds (fun () -> S.scan t)
+  let iota n = ffst fst (scan (S.T.const n 1)) (* fst discards the total from the scan *)
+end
+
+module BBottomUpInt = struct
+  include BoundedBottomUp (NoisyInt)
+  let scan t = let t', n = NoisyInt.counting_adds (fun () -> scan t) in
+               Printf.printf "Scan used %d additions.\n%!" n; t'
+  let iota n = fst (scan (T.const n 1))
+end
