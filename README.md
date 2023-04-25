@@ -13,7 +13,7 @@ input, and does NOT include the sum of all the elements (hence exclusive).
 
 Conal quickly generalises this into a more composable form where the total is 
 returned separately, so that the abstract type of the scan over some container
-type constructor `C` is, in Haskell-ish notation 
+type constructor $C$ is, in Haskell-ish notation 
 ```
     Monoid A => C A -> (C A, A)
 ```
@@ -92,12 +92,12 @@ of the tree (eg by pattern matching), the bottom-up tree makes it easy to work o
 N levels of the tree, by digging through N levels of `B` constructors and then applying a map.
 
 What emerges from the Agda versions is that, when the type of container is an algberaic type
-```
+$$
     T a = a + F (G a)
-``` 
-where `F` and/or `G` are 'scannable' functors (one or both of which might involve T),
-then, for monoidal types `a` with 0 and (+) as the 'zero' and 'add' operations of the monoid
-respectively, then `T` is scannable with
+$$ 
+where $F$ and/or $G$ are 'scannable' functors (one or both of which might involve $T$),
+then, for monoidal types $a$ with 0 and + as the 'zero' and 'add' operations of the monoid
+respectively, then $T$ is scannable with
 ```
     scan = scan <+> first (zipWith (map . (+)) . swap) . assocl . second scan . unzipWith scan
 ```
