@@ -92,9 +92,9 @@ of the tree (eg by pattern matching), the bottom-up tree makes it easy to work o
 N levels of the tree, by digging through N levels of `B` constructors and then applying a map.
 
 What emerges from the Agda versions is that, when the type of container is an algberaic type
-$$
+```math
     T a = a + F (G a)
-$$ 
+``` 
 where $F$ and/or $G$ are 'scannable' functors (one or both of which might involve $T$),
 then, for monoidal types $a$ with 0 and + as the 'zero' and 'add' operations of the monoid
 respectively, then $T$ is scannable with
