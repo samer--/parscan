@@ -117,9 +117,22 @@ F-containers together: one containing many sub-scans and the other containing th
 coarse grained scan. Finally, we zip these together at the F-level, in each case using `map` to
 add the coarse grained cumulative total to all the elements in each sub-scan.
 
-Described in this way, this would seem to generalise to containers built from any arrangement of
-functors, as long as each functor supports zip and unzip. This indeed what Conal goes on to
-do in his talk and I will aim to do in this Agda version a some point in the future.
+Described in this way, it sounds intuitively correct no matter what the $F$ and $G$ functors
+are (as long as they are scannable), and so would seem to generalise to containers built from 
+many possible arrangements of functors, as long as each functor supports zip and unzip. 
+In the case of the top down tree, we have the recursive type
+```math
+    T a = a + \mathit{Pair} T a
+```
+(where the left of the sum type is represented by a leaf node constructor `L` in the Agda code) 
+and for the bottom up tree we have
+```
+    T a = a + T (\mathit{Pair} a)
+```
+This is indeed what Conal goes on to do in his talk, considering how the scans for a number
+of basic funtors can be composed to get the scan for a composition of functors.
+and I will aim to do in this Agda version a some point in the future.
+
 
 ### Todo in Agda version
 - The 'bash' tree as described in the talk.
