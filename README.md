@@ -95,15 +95,14 @@ What emerges from the Agda versions is that, when the type of container is an al
 ```math
     T a = a + F (G a)
 ``` 
-where $F$ and/or $G$ are 'scannable' functors (one or both of which might involve $T$),
+where $F$ and $G$ are 'scannable' functors (one or both of which might involve $T$),
 then, for monoidal types $a$ with 0 and + as the 'zero' and 'add' operations of the monoid
 respectively, then $T$ is scannable with
 ```
     scan = scan <+> first (zipWith (map . (+)) . swap) . assocl . second scan . unzipWith scan
 ```
 where `f <+> g` is a function that applies f or g to whichever side of a sum type is provided,
-and `Monoid a ^ x : a => scan x = (0, x)`, ie the scan for a leaf value is just a pair of zero
-and the value itself. `first` and `second` are as defined in Haskell's Arrow library, ie applying
+and `first` and `second` are as defined in Haskell's Arrow library, ie applying
 a function to the first or second element of a pair.
 
 The left-hand side of the `<+>` is just a scan over a leaf node, ie `scan x = (0, x)`.
