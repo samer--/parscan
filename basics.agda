@@ -2,8 +2,7 @@ module Basics where
 
 infixr 9 _⊗_
 infixr 8 _∘_
-infixr 1 _⦉_
-infixl 1 _⦊_
+infixr 1 _⦉_ _⦊_
 
 private 
    variable

@@ -11,7 +11,7 @@ variable
 
 -- Basic stuff ------------------------------
 
-id₁ : ∀ {a} {A : Set a} → A → A
+id₁ : {A : Set₁} → A → A
 id₁ x = x
 
 instance 𝟙Functor : Functor (const 𝟙)
@@ -27,7 +27,7 @@ AddNat = record { ε = 0; _∙_ = _+_ }
 -- NB. zipping and unzipping is needed for scanning compositions of functors.
 -- Applicative does provide something which *look* like a zip, but it is not
 -- guaranteed to work like a zip (be shape preserving, interact with unzip,
--- map, fst and snd in the expected way). Hence the Zip type class. Not that
+-- map, fst and snd in the expected way). Hence the Zip type class. Note that
 -- we can always unzip a functor by mapping twice, but there might be a better
 -- way for some types.
 
