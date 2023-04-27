@@ -11,6 +11,11 @@ variable
 
 -- Basic stuff ------------------------------
 
+-- Using this data type for the Id functor instead of the type level identity
+-- function means that Agda's implicit argument inference works without help in 
+-- some of the definitions below (ie without passing record values explicitly),
+-- but at the cost of a lot of these `I` constructors in the data structures.
+
 data Id (A : Set) : Set where
    I : A → Id A
 unI : Id A → A
@@ -80,6 +85,7 @@ Product F G A = F A × G A
 Pair : Set → Set
 Pair A = A × A
 
+-- NB. maybe introduce a separate Pair datatype with functor instance?
 PairF : Set → Set
 PairF = Pair ∘ Id
 
