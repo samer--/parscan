@@ -11,14 +11,16 @@ variable
 
 -- Basic stuff ------------------------------
 
-id₁ : {A : Set₁} → A → A
-id₁ x = x
+data Id (A : Set) : Set where
+   I : A → Id A
+unI : Id A → A
+unI (I x) = x
 
 instance 𝟙Functor : Functor (const 𝟙)
 𝟙Functor = record { map = λ _ _ → Unit }
 
-instance IdFunctor : Functor id₁
-IdFunctor = record { map = id }
+instance IFunctor : Functor Id
+IFunctor = record { map = λ f → I ∘ f ∘ unI }
 
 instance AddNat : Monoid Nat
 AddNat = record { ε = 0; _∙_ = _+_ }
@@ -57,16 +59,18 @@ mapAdd = uncurry (map ∘ _∙_)
 instance 𝟙Scan : Scan (const 𝟙)
 𝟙Scan = record { scan = λ _ → (Unit , ε) }
 
-instance IdScan : Scan id₁
-IdScan = record { scan = λ x → (ε , x) }
+instance IdScan : Scan Id
+IdScan = record { scan = (I ε ,_) ∘ unI }
 
 instance 𝟙Zip : Zip (const 𝟙)
 𝟙Zip = record { pure = const Unit;
                 zipWith   = λ _ _ → Unit;
                 unzipWith = λ _ _ → (Unit , Unit) }
 
-instance IdZip : Zip id₁
-IdZip = record { pure = id; zipWith = id; unzipWith = id }
+instance IdZip : Zip Id
+IdZip = record { pure = I; 
+                 zipWith = λ f → I ∘ f ∘ unI ⊗ unI; 
+                 unzipWith = λ f → I ⊗ I ∘ f ∘ unI }
 
 -- instances for product -----------------------
 
@@ -75,6 +79,9 @@ Product F G A = F A × G A
 
 Pair : Set → Set
 Pair A = A × A
+
+PairF : Set → Set
+PairF = Pair ∘ Id
 
 instance ×Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (Product F G)
 ×Functor = record { map = λ f → map f ⊗ map f }
@@ -104,56 +111,45 @@ private
    unComp (Comp x) = x
 
 instance ⊙Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (F ⊙ G)
-⊙Functor {{FF}} {{GF}} = record { map = λ f → Comp ∘ map {{FF}} (map {{GF}} f) ∘ unComp }
+⊙Functor = record { map = λ f → Comp ∘ map (map f) ∘ unComp }
 
 instance ⊙Zip : {{FZ : Zip F}} {{GZ : Zip G}} → Zip (F ⊙ G)
-⊙Zip {{FZ}} {{GZ}} = record { 
-   pure = Comp ∘ Zip.pure FZ ∘ Zip.pure GZ;
-   zipWith   = λ f → Comp ∘ zipWith {{FZ}} (zipWith {{GZ}} f) ∘ unComp ⊗ unComp;
-   unzipWith = λ f → Comp ⊗ Comp ∘ unzipWith {{FZ}} (unzipWith {{GZ}} f) ∘ unComp }
+⊙Zip = record { 
+   pure = Comp ∘ pure ∘ pure;
+   zipWith   = λ f → Comp ∘ zipWith (zipWith f) ∘ unComp ⊗ unComp;
+   unzipWith = λ f → Comp ⊗ Comp ∘ unzipWith (unzipWith f) ∘ unComp }
 
 
 scan⊙ : {{FZ : Zip F}} {{M : Monoid A}} 
         {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : Scan G}}
-        → (F ⊙ G) A → (F ⊙ G) A × A
-scan⊙ {{FZ}} {{_}} {{_}} {{GF}} (Comp x) =
-   (ffst (Comp ∘ zipWith (mapAdd {{GF}}) ∘ swap) ∘ assocl ∘ fsnd scan ∘ Zip.unzipWith FZ scan) x
+        → F (G A) → F (G A) × A
+scan⊙ = ffst (zipWith mapAdd ∘ swap) ∘ assocl ∘ fsnd scan ∘ unzipWith scan
 
 instance ⊙Scan : {{FZ : Zip F}} {{FF : Functor F}} {{GF : Functor G}}
                  {{FS : Scan F}} {{GS : Scan G}} → Scan (F ⊙ G)
-⊙Scan = record { scan = scan⊙ }
+⊙Scan = record { scan = ffst Comp ∘ scan⊙ ∘ unComp }
 
 -- Depth indexed top down tree --------------------------------------
 
 TN↓ : Nat → Set → Set
-TN↓ zero = id₁
-TN↓ (suc n) = Pair ⊙ TN↓ n
+TN↓ zero = Id
+TN↓ (suc n) = PairF ⊙ TN↓ n
 
 TN↑ : Nat → Set → Set
-TN↑ zero = id₁
-TN↑ (suc n) = TN↑ n ⊙ Pair
+TN↑ zero = Id
+TN↑ (suc n) = TN↑ n ⊙ PairF
 
 Bush : Nat → Set → Set
-Bush zero = Pair
+Bush zero A = PairF A
 Bush (suc n) = Bush n ⊙ Bush n
 
 --- Tests ------------------------------------
 
-tscan : Pair (Pair (Pair Nat)) × Nat
-tscan = scan (((1 , 2) , (3 , 4)) , ((5 , 6) , (7 , 8)))
+tree1 : TN↓ 3 Nat
+tree1 = pure 1
 
--- tscan2a tscan2b : (Nat ⊎ Pair Nat) × Nat
--- tscan2a = scan (Inl 3)
--- tscan2b = scan (Inr (4 , 5))
-
-ptree0 : (Pair ⊙ Pair) Nat
-ptree0 = Comp ((1 , 2) , (3 , 4))
-
-ptree1 : (Pair ⊙ (Pair ⊙ Pair)) Nat
-ptree1 = Comp (Comp ((1 , 2) , (3 , 4)) , Comp ((5 , 6) , (7 , 8)))
-
-ptree2 : ((Pair ⊙ Pair) ⊙ Pair) Nat
-ptree2 = Comp (Comp (((1 , 2) , (3 , 4)) , ((5 , 6) , (7 , 8))))
+tree2 : TN↑ 3 Nat
+tree2 = pure 1
 
 bush : Bush 2 Nat
 bush = pure 1
