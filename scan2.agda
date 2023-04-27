@@ -20,11 +20,6 @@ instance 𝟙Functor : Functor (const 𝟙)
 instance IdFunctor : Functor id₁
 IdFunctor = record { map = id }
 
-data _⊎_ (A B : Set) : Set where
-   Inl : A → A ⊎ B
-   Inr : B → A ⊎ B
-
-
 instance AddNat : Monoid Nat
 AddNat = record { ε = 0; _∙_ = _+_ }
 
@@ -105,39 +100,14 @@ instance ×Scan : {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : S
 
 -- Tools and instances for coproducts -------------------------------------------
 
-_⊕_ : (A → C) → (B → D) → A ⊎ B → C ⊎ D
-(f ⊕ g) (Inl x) = Inl (f x)
-(f ⊕ g) (Inr y) = Inr (g y)
-
-Sum : (Set → Set) → (Set → Set) → Set → Set
-Sum F G A = F A ⊎ G A
-
-instance ⊎Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (Sum F G)
-⊎Functor = record { map = mapSum } where
-   mapSum : {A B : Set} {F G : Set → Set} {{FF : Functor F}} {{GF : Functor G}}
-            → (A → B) → Sum F G A → Sum F G B
-   mapSum f = map f ⊕ map f
-
-scan+ : {{FS : Scan F}} {{GS : Scan G}} {{M : Monoid A}} → Sum F G A → Sum F G A × A
-scan+ (Inl x) = ffst Inl (scan x)
-scan+ (Inr y) = ffst Inr (scan y)
-
-instance +Scan : {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : Scan G}} → Scan (Sum F G)
-+Scan = record { scan = scan+ }
-
--- defining a Zip instance for Sums is going to be a problem because we can't
--- zip a left-value with a right-value. This means we can't use a Sum type as the
--- outer functor in a composition of functors and expect to be able to scan it.
--- We would need index the sum type somehow, similar to how we can index a list
--- type by length to verify that two lists are zippable.
-
 -- Composition of functors ---------------------------------------------------
 
 data _⊙_ (F G : Set → Set) (A : Set) : Set where
    Comp : F (G A) → (F ⊙ G) A
 
-unComp : (F ⊙ G) A → F (G A)
-unComp (Comp x) = x
+private
+   unComp : (F ⊙ G) A → F (G A)
+   unComp (Comp x) = x
 
 instance ⊙Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (F ⊙ G)
 ⊙Functor = record { map = map∘ } where
@@ -171,18 +141,18 @@ TN↑ : Nat → Set → Set
 TN↑ zero = id₁
 TN↑ (suc n) = TN↑ n ⊙ Pair
 
-Tbush : Nat → Set → Set
-Tbush zero = Pair
-Tbush (suc n) = Tbush n ⊙ Tbush n
+Bush : Nat → Set → Set
+Bush zero = Pair
+Bush (suc n) = Bush n ⊙ Bush n
 
 --- Tests ------------------------------------
 
 tscan : Pair (Pair (Pair Nat)) × Nat
 tscan = scan (((1 , 2) , (3 , 4)) , ((5 , 6) , (7 , 8)))
 
-tscan2a tscan2b : (Nat ⊎ Pair Nat) × Nat
-tscan2a = scan (Inl 3)
-tscan2b = scan (Inr (4 , 5))
+-- tscan2a tscan2b : (Nat ⊎ Pair Nat) × Nat
+-- tscan2a = scan (Inl 3)
+-- tscan2b = scan (Inr (4 , 5))
 
 ptree0 : (Pair ⊙ Pair) Nat
 ptree0 = Comp ((1 , 2) , (3 , 4))
@@ -192,6 +162,13 @@ ptree1 = Comp (Comp ((1 , 2) , (3 , 4)) , Comp ((5 , 6) , (7 , 8)))
 
 ptree2 : ((Pair ⊙ Pair) ⊙ Pair) Nat
 ptree2 = Comp (Comp (((1 , 2) , (3 , 4)) , ((5 , 6) , (7 , 8))))
+
+bush : Bush 2 Nat
+bush = pure 1
+
+bush₁ bush₂ : Bush 2 Nat × Nat
+bush₁ = scan bush
+bush₂ = scan (fst bush₁)
 
 -- something funny going on here that prevents these from working.
 -- It seems that with n an unspecified Nat, Agda can not tell which instance 
