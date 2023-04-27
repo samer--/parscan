@@ -137,17 +137,17 @@ and I will aim to do in this Agda version a some point in the future.
 ### Second try
 In `scan2.agda` we have another go at this via a more compositional approach that
 rests on defining how to scan some basic functorial building blocks:
-- the $A \mapsto \mathrm{const} \mathit{Unit} A = \mathit{Unit}$ functor, 
-  which only ever contains the value `Unit`
+- the $A \mapsto \mathrm{Unit}$ functor, which only ever contains the value `Unit`
 - the identity functor $A \mapsto A$, which just contains one value of a given type
 - the product functor $A \mapsto F A \times G A$, ie a pair of containers given two
   functors $F$ and $G4.
 - the composition functor $A \mapsto F (G A)$ for two functors $F$ and $G$.
 
 Each of these functor combinators provides instances for `Zip` and `Scan` type classes
-as well as `Functor`, so that we can build `scan` functions bit by bit.
+as well as `Functor`, so that we can build `scan` functions compositionally for types
+built algebraically from these compoonents.
 This seems to work well enough to allow us to generate scan functions for top down
-trees, bottom up trees, and bushes all in a very few lines towards the end of the module.
+trees, bottom up trees, and 'bushes' all in a very few lines towards the end of the module.
 
 ### Todo in Agda version
 - Try to get implicit instance resolution working better in scan2.agda.
