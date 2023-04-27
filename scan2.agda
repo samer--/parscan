@@ -77,9 +77,7 @@ Pair : Set → Set
 Pair A = A × A
 
 instance ×Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (Product F G)
-×Functor = record { map = map× } where
-   map× : {{FF : Functor F}} {{GF : Functor G}} → (A → B) → Product F G A → Product F G B
-   map× f = map f ⊗ map f
+×Functor = record { map = λ f → map f ⊗ map f }
 
 instance ×Zip : {{FZ : Zip F}} {{GZ : Zip G}} → Zip (Product F G)
 ×Zip = record { pure = pure ▲ pure;
@@ -101,18 +99,18 @@ instance ×Scan : {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : S
 data _⊙_ (F G : Set → Set) (A : Set) : Set where
    Comp : F (G A) → (F ⊙ G) A
 
+private
+   unComp : (F ⊙ G) A → F (G A)
+   unComp (Comp x) = x
+
 instance ⊙Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (F ⊙ G)
-⊙Functor = record { map = map∘ } where
-   map∘ : {{FF : Functor F}} {{GF : Functor G}} → (A → B) → (F ⊙ G) A → (F ⊙ G) B
-   map∘ {{FF}} {{GF}} f (Comp x) = Comp (Functor.map FF (Functor.map GF f) x)
+⊙Functor {{FF}} {{GF}} = record { map = λ f → Comp ∘ map {{FF}} (map {{GF}} f) ∘ unComp }
 
 instance ⊙Zip : {{FZ : Zip F}} {{GZ : Zip G}} → Zip (F ⊙ G)
 ⊙Zip {{FZ}} {{GZ}} = record { 
    pure = Comp ∘ Zip.pure FZ ∘ Zip.pure GZ;
-   zipWith   = λ f → Comp ∘ Zip.zipWith FZ (Zip.zipWith GZ f) ∘ unComp ⊗ unComp;
-   unzipWith = λ f → Comp ⊗ Comp ∘ Zip.unzipWith FZ (Zip.unzipWith GZ f) ∘ unComp } where
-      unComp : (F ⊙ G) A → F (G A)
-      unComp (Comp x) = x
+   zipWith   = λ f → Comp ∘ zipWith {{FZ}} (zipWith {{GZ}} f) ∘ unComp ⊗ unComp;
+   unzipWith = λ f → Comp ⊗ Comp ∘ unzipWith {{FZ}} (unzipWith {{GZ}} f) ∘ unComp }
 
 
 scan⊙ : {{FZ : Zip F}} {{M : Monoid A}} 
