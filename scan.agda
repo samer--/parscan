@@ -2,63 +2,14 @@ module Scan where
 
 open import Agda.Builtin.Nat
 open import Agda.Builtin.List
+open import Basics
 
 
-infixr 4 _⊗_
-infixr 9 _∘_
-
-id : {A : Set} → A → A
-id x = x
-
-_∘_ : {A B C : Set} → (B → C) → (A → B) → A → C
-(f ∘ g) x = f (g x)
-
-record Monoid (M : Set) : Set where
-   infixr 4 _∙_
-   field
-      ε   : M
-      _∙_ : M → M → M
-      
 AddNat : Monoid Nat
 AddNat = record { ε = 0; _∙_ = _+_ }
 
 MulNat : Monoid Nat
 MulNat = record { ε = 1; _∙_ = _*_ }
-
-record Functor (F : Set → Set) : Set₁ where
-   field
-      map : {A B : Set} → (A → B) → F A → F B
-
-
-data _×_ (A B : Set) : Set where
-   _,_ : A → B → A × B
-
-uncurry : {A B C : Set} → (A → B → C) → A × B → C
-uncurry f (x , y) = f x y
-
-curry : {A B C : Set} → (A × B → C) → A → B → C
-curry f x y = f (x , y)
-
-fst : {A B : Set} → A × B → A
-fst (x , _) = x
-
-snd : {A B : Set} → A × B → B
-snd (_ , y) = y
-
-swap : {A B : Set} → A × B → B × A
-swap (x , y) = y , x
-
-assocl : {A B C : Set} → (A × (B × C)) → ((A × B) × C)
-assocl (a , (b , c)) = ((a , b) , c)
-
-ffst : {A B C : Set} → (A → C) → A × B → C × B
-ffst f (x , y) = f x , y
-
-fsnd : {A B C : Set} → (B → C) → A × B → A × C
-fsnd f (x , y) = x , f y
-
-_⊗_ : {A B C D : Set} →  (A → C) → (B → D) → A × B → C × D
-_⊗_ f  g (x , y) = f x , g y
 
 record Zip (F : Set → Set) : Set₁ where
    field
