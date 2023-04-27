@@ -37,8 +37,8 @@ record Scan (F : Set → Set) : Set₁ where
 
 record Zip (F : Set → Set) : Set₁ where
    field
-      zipWith   : (A → B → C) → F A × F B → F C
-      unzipWith : (A → B × C) → F A → F B × F C
+      zipWith   : (A × B → C) → F A × F B → F C -- these two should be
+      unzipWith : (A → B × C) → F A → F B × F C -- mutual inverses
       pure      : A → F A
 
 -- Let's open the type classes so far -------
@@ -48,6 +48,9 @@ open Monoid {{...}}
 open Scan {{...}}
 open Zip {{...}}
 
+-- usefull for scanners
+mapAdd : {{FF : Functor F}} {{M : Monoid A}} → A × F A → F A
+mapAdd = uncurry (map ∘ _∙_)
 
 -- Scan instances for unit and id
 
@@ -63,7 +66,7 @@ instance 𝟙Zip : Zip (const 𝟙)
                 unzipWith = λ _ _ → (Unit , Unit) }
 
 instance IdZip : Zip id₁
-IdZip = record { pure = id; zipWith = uncurry; unzipWith = id }
+IdZip = record { pure = id; zipWith = id; unzipWith = id }
 
 -- instances for product -----------------------
 
@@ -78,16 +81,10 @@ instance ×Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (Product 
    map× : {{FF : Functor F}} {{GF : Functor G}} → (A → B) → Product F G A → Product F G B
    map× f = map f ⊗ map f
 
-
 instance ×Zip : {{FZ : Zip F}} {{GZ : Zip G}} → Zip (Product F G)
 ×Zip = record { pure = pure ▲ pure;
                 zipWith = λ f → zipWith f ⊗ zipWith f ∘ transp;
                 unzipWith = λ f → transp ∘ unzipWith f ⊗ unzipWith f }
-
-
-
-mapAdd : {{M : Monoid A}} {{FF : Functor F}} → A × F A → F A
-mapAdd = uncurry (map ∘ _∙_)
 
 scan× : {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : Scan G}}
         {{M : Monoid A}} → Product F G A → Product F G A × A
@@ -98,16 +95,11 @@ scan× = ffst (mapAdd ⊗ mapAdd ∘ transp ∘ swap) ∘ assocl ∘ fsnd scanP 
 instance ×Scan : {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : Scan G}} → Scan (Product F G)
 ×Scan = record { scan = scan× }
 
--- Tools and instances for coproducts -------------------------------------------
 
 -- Composition of functors ---------------------------------------------------
 
 data _⊙_ (F G : Set → Set) (A : Set) : Set where
    Comp : F (G A) → (F ⊙ G) A
-
-private
-   unComp : (F ⊙ G) A → F (G A)
-   unComp (Comp x) = x
 
 instance ⊙Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (F ⊙ G)
 ⊙Functor = record { map = map∘ } where
@@ -117,15 +109,17 @@ instance ⊙Functor : {{FF : Functor F}} {{GF : Functor G}} → Functor (F ⊙ G
 instance ⊙Zip : {{FZ : Zip F}} {{GZ : Zip G}} → Zip (F ⊙ G)
 ⊙Zip {{FZ}} {{GZ}} = record { 
    pure = Comp ∘ Zip.pure FZ ∘ Zip.pure GZ;
-   zipWith   = λ f → Comp ∘ Zip.zipWith FZ (curry (Zip.zipWith GZ f)) ∘ unComp ⊗ unComp;
-   unzipWith = λ f → Comp ⊗ Comp ∘ Zip.unzipWith FZ (Zip.unzipWith GZ f) ∘ unComp }
+   zipWith   = λ f → Comp ∘ Zip.zipWith FZ (Zip.zipWith GZ f) ∘ unComp ⊗ unComp;
+   unzipWith = λ f → Comp ⊗ Comp ∘ Zip.unzipWith FZ (Zip.unzipWith GZ f) ∘ unComp } where
+      unComp : (F ⊙ G) A → F (G A)
+      unComp (Comp x) = x
 
 
 scan⊙ : {{FZ : Zip F}} {{M : Monoid A}} 
         {{FF : Functor F}} {{GF : Functor G}} {{FS : Scan F}} {{GS : Scan G}}
         → (F ⊙ G) A → (F ⊙ G) A × A
 scan⊙ {{FZ}} {{_}} {{_}} {{GF}} (Comp x) =
-   (ffst (Comp ∘ zipWith (Functor.map GF ∘ _∙_) ∘ swap) ∘ assocl ∘ fsnd scan ∘ Zip.unzipWith FZ scan) x
+   (ffst (Comp ∘ zipWith (mapAdd {{GF}}) ∘ swap) ∘ assocl ∘ fsnd scan ∘ Zip.unzipWith FZ scan) x
 
 instance ⊙Scan : {{FZ : Zip F}} {{FF : Functor F}} {{GF : Functor G}}
                  {{FS : Scan F}} {{GS : Scan G}} → Scan (F ⊙ G)
