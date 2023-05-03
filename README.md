@@ -296,7 +296,7 @@ and `Scannable` instances.
 ### module BottomUp
 A bottom-up tree as a GADT. Once the `Zippable` instance is defined, the `scan` function
 is identical to the version in `TopDown2`.
-```
+```haskell
 ghci> :l bottomup.hs 
 [1 of 2] Compiling Common           ( Common.hs, interpreted )
 [2 of 2] Compiling BottomUp         ( bottomup.hs, interpreted )
@@ -316,7 +316,7 @@ instances and we should be able to build arbitrary scannable data structures.
 It turns out we don't even need to define any new 'tree' data types to get this to work -
 it's enough to define some type families (ie type level functions) to build the desired
 types inductively. We can even define the 'bush' data structure in 3 lines of code.
-```
+```haskell
 ghci> :l algebraic
 
 ghci> iota :: TD Two Int
@@ -336,7 +336,7 @@ tree. (Come to think of it, if we were to remove the depth parameters, this woul
 like a fixed-point combinator for functors, with the functor transformer provide in 'open
 recursive' style...). The top down tree can be recovered by using `Compose Pair` as the
 functor transformer:
-```
+```haskell
 ghci> iota :: GeneralT (Compose Pair) Two Int
 Compose ((Compose ((Identity 0):#(Identity 1))):#(Compose ((Identity 2):#(Identity 3))))
 ```
@@ -344,7 +344,7 @@ The bottom up tree can be recovered with the aid of a `Flip` higher-kinded type 
 as a `newtype` rather than a type family because type families can't be partially applied in 
 certain contexts). Luckily, all the necessary instances can be derived automatically, so, 
 remarkably, we can write this and get a sensible answer:
-```
+```haskell
 ghci> iota :: GeneralT (Flip Compose Pair) Two Int
 Flip (Compose (Compose (Identity ((0:#1):#(2:#3)))))
 ```
@@ -357,7 +357,7 @@ there's any point to this. (Imports `Algebraic`).
 This is an alternative implementation of the generalised tree idea in `Algebraic.GeneralT`, 
 but this time using a GADT instead of a type family. Deriving the necessary instances turned
 out to be quite complicated, but it worked in the end:
-```
+```haskell
 ghci> iota :: FT (Compose Pair) Two Int
 B (Compose (B (Compose (L 0:#L 1)):#B (Compose (L 2:#L 3))))
 ghci> iota :: FT (Flip Compose Pair) Three Int
