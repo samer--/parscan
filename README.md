@@ -151,6 +151,12 @@ built algebraically from these compoonents.
 This seems to work well enough to allow us to generate scan functions for top down
 trees, bottom up trees, and 'bushes' all in a very few lines towards the end of the module.
 
+Note, there is an alternative branch called `more_tagged` that uses a new (tagged)
+data type to represent the identity functor transformer. This seems to help Agda's
+instance resolution algorithm so that not so many instance arguments need to be given
+explicitly, at the cost of more layers of type constructors in the resulting data
+structures.
+
 ### Todo in Agda version
 - Try to get implicit instance resolution working better in scan2.agda.
 - Try to understand the essence of 'zippable' and 'unzipable' functors. For example, any 
