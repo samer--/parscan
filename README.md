@@ -27,6 +27,8 @@ There are versions in O'Caml, Agda and Haskell.
 
 ## Agda version
 
+See `agda` subdirectory.
+
 ### First try
 Load `scan.agda` into an editor with Agda integration, eg a properly set-up
 vim or emacs. Then, you can try reducing various scans to normal form. I use
@@ -244,4 +246,114 @@ utop # BBottomUpInt.(iota (Suc (Suc (Suc Zero))));;
 
 ## Haskell version
 
-[TBD]
+In the `haskell` subdirectory. This contains a few modules exploring similar constructs
+as are found in the Agda version; indeed the Agda version served as a very useful guide
+when navigating the complex landscape of Haskell type-level programming.
+
+### module Common
+The file `common.hs` contains the module `Common`, It provides some basic tools including
+the type classes `Zippable` and `Scannable`, with instances for a `Pair` type, and functions
+that implement fallback algorithms for `zipWith` and `unzipWith` relying only on `Applicative`
+and `Functor` instances respectively. 
+
+It also provides a scan function `scanTraversable` that
+works for any `Traversable` instance, but is purely sequential and doesn't allow any parallelism.
+
+Finally, there is some fun with type level naturals in order to support depth tagged tree
+structures in the other modules.
+
+In most cases, the easiest way to test if a particular data type supports the `scan` function
+from the `Scannable` type class is to try `iota`, which (relying also the `Applicative` instance)
+applies `scan` to a tree full of 1s in order to get an ascending sequence of integers starting
+at 0.
+
+### module Simple
+Direct approach to top-down tree, using a `B` data constructor with two subtree arguments.
+```haskell
+ghci> :l simple.hs
+ghci> iota :: T Three Int
+B (B (B (L 0) (L 1)) (B (L 2) (L 3))) (B (B (L 4) (L 5)) (B (L 6) (L 7)))
+```
+### module TopDown
+Another top-down tree, this time the `B` constructor takes a pair of subtrees. The `Applicative`
+instance is defined for all depths in one go using some tricksy type level naturals, but
+this seems to require some constraints to be added to GADT data constructors in a couple of places.
+The basic structure of `scan` for a composition of two functors emerges here in the second
+clause of `scan`, but referring directly to zip, unzip and scan functions for `Pair`.
+
+### module TopDown2
+Yet another top-down tree, this time deriving more instances automatically and deriving
+`Applicative` inductively in two clauses, avoiding the type level natural shenanigens.
+The `scan` function now handles the `Pair` functor implicity via its `Zippable`, `Functor`
+and `Scannable` instances.
+
+### module BottomUp
+A bottom-up tree as a GADT. Once the `Zippable` instance is defined, the `scan` function
+is identical to the version in `TopDown2`.
+```
+ghci> :l bottomup.hs 
+[1 of 2] Compiling Common           ( Common.hs, interpreted )
+[2 of 2] Compiling BottomUp         ( bottomup.hs, interpreted )
+Ok, two modules loaded.
+ghci> iota :: T Three Int
+B (B (B (L (((0 :# 1) :# (2 :# 3)) :# ((4 :# 5) :# (6 :# 7))))))
+```
+
+### module Algebraic
+This is where things get interesting. We're trying to get at the idea that the scan
+function is built up compositionally depending on the composition of functors used to
+build a data structure. Several useful functor 'combinators' are already provided in the 
+standard library, including `Identity`, `Product` and `Compose`. They already have `Functor`
+and `Applicative` instances, so all we need to do is provide `Zippable` and `Scannable`
+instances and we should be able to build arbitrary scannable data structures.
+
+It turns out we don't even need to define any new 'tree' data types to get this to work -
+it's enough to define some type families (ie type level functions) to build the desired
+types inductively. We can even define the 'bush' data structure in 3 lines of code.
+```
+ghci> :l algebraic
+
+ghci> iota :: TD Two Int
+Compose ((Compose ((Identity 0):#(Identity 1))):#(Compose ((Identity 2):#(Identity 3))))
+
+ghci> iota :: BU Two Int
+Compose (Compose (Identity ((0:#1):#(2:#3))))
+
+ghci> iota :: Bush Two Int
+Compose (Compose (   ((Compose ((0:#1):#(2:#3))) :# (Compose ((4:#5):#(6:#7))))
+                  :# ((Compose ((8:#9):#(10:#11))) :#(Compose ((12:#13):#(14:#15))))))
+```
+The `GeneralT` type family tries to factor out the commonality between the top-down and 
+bottom up trees by taking a 'functor transformer' (a type level functor-to-functor function)
+whos job is the build the 'branch' functor given the functor representing a one-level smaller
+tree. (Come to think of it, if we were to remove the depth parameters, this would be rather
+like a fixed-point combinator for functors, with the functor transformer provide in 'open
+recursive' style...). The top down tree can be recovered by using `Compose Pair` as the
+functor transformer:
+```
+ghci> iota :: GeneralT (Compose Pair) Two Int
+Compose ((Compose ((Identity 0):#(Identity 1))):#(Compose ((Identity 2):#(Identity 3))))
+```
+The bottom up tree can be recovered with the aid of a `Flip` higher-kinded type (implemented
+as a `newtype` rather than a type family because type families can't be partially applied in 
+certain contexts). Luckily, all the necessary instances can be derived automatically, so, 
+remarkably, we can write this and get a sensible answer:
+```
+ghci> iota :: GeneralT (Flip Compose Pair) Two Int
+Flip (Compose (Compose (Identity ((0:#1):#(2:#3)))))
+```
+
+### module DataFamily
+Yet another version of the top-down tree, this time using data families. I'm not sure
+there's any point to this. (Imports `Algebraic`).
+
+### module AlgebraicGADT
+This is an alternative implementation of the generalised tree idea in `Algebraic.GeneralT`, 
+but this time using a GADT instead of a type family. Deriving the necessary instances turned
+out to be quite complicated, but it worked in the end:
+```
+ghci> iota :: FT (Compose Pair) Two Int
+B (Compose (B (Compose (L 0:#L 1)):#B (Compose (L 2:#L 3))))
+ghci> iota :: FT (Flip Compose Pair) Three Int
+B (Compose B (Compose B (Compose L (((0:#1):#(2:#3)):#((4:#5):#(6:#7))))))
+```
