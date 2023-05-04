@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, DataKinds, StandaloneDeriving, DeriveTraversable #-}
 module TopDown where
 
-import Prelude hiding (zipWith)
 import Control.Arrow (first, second)
 import Common
 
@@ -25,4 +24,4 @@ instance Applicative (T n) => Applicative (T (Succ n)) where
 
 instance Scannable (T n) where
   scan (L x)  = (L mempty, x)
-  scan (B ab) = (first (B . zipWith mapAdd) . assocl . second scan . unzipWith scan) ab
+  scan (B ab) = (first (B . fzipWith mapAdd) . assocl . second scan . unzipWith scan) ab

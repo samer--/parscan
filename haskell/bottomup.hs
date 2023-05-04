@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, DataKinds, StandaloneDeriving, DeriveTraversable, UndecidableInstances #-}
 module BottomUp where
 
-import Prelude hiding (zipWith)
 import Control.Arrow (first, second)
 import Control.Applicative
 import qualified Data.Traversable
@@ -26,11 +25,11 @@ instance Applicative (T n) => Applicative (T ('Succ n)) where
   B fp <*> B xp = B ((<*>) <$> fp <*> xp)
 
 instance Zippable (T n) where
-  zipWith f (L x, L y) = L (f (x,y))
-  zipWith f (B a, B b) = B (zipWith (zipWith f) (a, b))
+  fzipWith f (L x, L y) = L (f (x,y))
+  fzipWith f (B a, B b) = B (fzipWith (fzipWith f) (a, b))
   unzipWith f (L x) = (L ⊗ L) (f x)
   unzipWith f (B t) = (B ⊗ B) (unzipWith (unzipWith f) t)
 
 instance Zippable (T n) => Scannable (T n) where
   scan (L x) = (L mempty, x)
-  scan (B t) = (first (B . zipWith mapAdd) . assocl . second scan . unzipWith scan) t
+  scan (B t) = (first (B . fzipWith mapAdd) . assocl . second scan . nzipWith scan) t

@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, DataKinds, TypeFamilies, QuantifiedConstraints, UndecidableInstances #-}
 module AlgebraicGADT where
 
-import Prelude hiding (zipWith)
 import Control.Arrow (first, second)
 import Data.Kind
 import Data.Functor.Identity
@@ -50,7 +49,7 @@ instance ( (forall f.Functor f => Functor (b f))
 
 -- cheaty Zippable instance
 instance (Functor (FT b n), Applicative (FT b n)) => Zippable (FT b n) where
-  zipWith   = zipWithA
+  fzipWith   = zipWithA
   unzipWith = unzipWithF
 
 -- Now for Scannable instance

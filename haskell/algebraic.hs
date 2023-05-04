@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds, TypeFamilies, RankNTypes, UnicodeSyntax #-}
 module Algebraic where
 
-import Prelude hiding (zipWith)
 import Control.Arrow (first, second)
 import Data.Kind
 import Data.Functor.Identity
@@ -20,21 +19,21 @@ instance Scannable Identity where
   scan (Identity x) = (mempty, x)
 
 instance Zippable Identity where
-  zipWith f (Identity x, Identity y) = Identity (f (x,y))
+  fzipWith f (Identity x, Identity y) = Identity (f (x,y))
   unzipWith f = (Identity ⊗ Identity) . f . runIdentity
 
 instance (Zippable f, Zippable g) ⇒ Zippable (Compose f g) where
    unzipWith f = (Compose ⊗ Compose) . unzipWith (unzipWith f) . getCompose
-   zipWith   f = Compose . zipWith (zipWith f) . (getCompose ⊗ getCompose)
+   fzipWith   f = Compose . fzipWith (fzipWith f) . (getCompose ⊗ getCompose)
 
 instance (Zippable f, Scannable f, Scannable g) ⇒ Scannable (Compose f g) where
-  scan = first (Compose . zipWith mapAdd) . assocl . second scan . unzipWith scan . getCompose
+  scan = first (Compose . fzipWith mapAdd) . assocl . second scan . unzipWith scan . getCompose
 
 (pair, unpair) = (uncurry Pair, \(Pair x y) → (x,y))
 
 instance (Zippable f, Zippable g) ⇒ Zippable (Product f g) where
   unzipWith f = (pair ⊗ pair) . transp . (unzipWith f ⊗ unzipWith f) . unpair
-  zipWith f   = pair . (zipWith f ⊗ zipWith f) . transp . (unpair ⊗ unpair)
+  fzipWith f   = pair . (fzipWith f ⊗ fzipWith f) . transp . (unpair ⊗ unpair)
 
 instance (Scannable f, Scannable g) ⇒ Scannable (Product f g) where
   scan (Pair x y) = first joinSubscans . assocl . second scan2 . transp . (scan ⊗ scan) $ (x,y)

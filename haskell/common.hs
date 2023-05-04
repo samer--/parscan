@@ -48,7 +48,7 @@ mapAdd ∷ (Monoid a, Functor f) ⇒  (f a, a) → f a
 mapAdd = uncurry (fmap . (<>)) . swap
 
 class Zippable f where
-  zipWith ∷ ((a, b) → c) → (f a, f b) → f c
+  fzipWith ∷ ((a, b) → c) → (f a, f b) → f c
   unzipWith ∷ (a → (b, c)) → f a → (f b, f c)
 
 class Functor f ⇒ Scannable f where
@@ -80,7 +80,7 @@ unzipWithP f = unzipP . fmap f
 scanP (x :# y) = (mempty :# x, x <> y)
 
 instance Zippable Pair where
-  zipWith = zipWithP
+  fzipWith = zipWithP
   unzipWith = unzipWithP
 
 instance Scannable Pair where

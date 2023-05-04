@@ -1,7 +1,6 @@
 {-# LANGUAGE GADTs, DataKinds, TypeFamilies, QuantifiedConstraints, UndecidableInstances #-}
 module DataFamily where
 
-import Prelude hiding (zipWith)
 import Control.Arrow (first, second)
 import Data.Kind
 import Data.Functor.Identity
