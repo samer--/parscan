@@ -16,9 +16,9 @@ import Common
  - approach which defines the Applicative instance inductively using two clauses.
  -}
 
-data T d a where
-  L :: a -> T Zero a
-  B :: IsNat d => Pair (T d a) -> T (Succ d) a
+data T (d :: Nat) a where
+  L :: a -> T 'Zero a
+  B :: IsNat d => Pair (T d a) -> T ('Succ d) a
 
 deriving instance Functor (T d)
 deriving instance Show a => Show (T d a)

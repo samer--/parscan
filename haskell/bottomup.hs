@@ -9,19 +9,19 @@ import Common
 
 
 data T (d :: Nat) a where
-  L :: a -> T Zero a
-  B :: T d (Pair a) -> T (Succ d) a
+  L :: a -> T 'Zero a
+  B :: T d (Pair a) -> T ('Succ d) a
 
 deriving instance Show a => Show (T d a)
 deriving instance Functor (T d)
 deriving instance Foldable (T d)
 deriving instance Traversable (T d)
 
-instance Applicative (T Zero) where
+instance Applicative (T 'Zero) where
   pure = L
   L f <*> L x = L (f x)
 
-instance Applicative (T n) => Applicative (T (Succ n)) where
+instance Applicative (T n) => Applicative (T ('Succ n)) where
   pure = B . pure . pure
   B fp <*> B xp = B ((<*>) <$> fp <*> xp)
 

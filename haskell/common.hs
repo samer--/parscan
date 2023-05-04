@@ -101,19 +101,19 @@ data Nat = Zero | Succ Nat deriving Show
 -- These are type indexed naturals: natural number values whos type is
 -- indexed by the corresponding type level natural.
 data INat (a ∷ Nat) where
-  Z ∷ INat Zero
-  S ∷ IsNat n ⇒ INat n → INat (Succ n) -- this constraint is needed by topdown.hs
+  Z ∷ INat 'Zero
+  S ∷ IsNat n ⇒ INat n → INat ('Succ n) -- this constraint is needed by topdown.hs
 
 -- this class allows us to turn type level nats in to term level nats
 class IsNat a where
   toInt  ∷ Int
   toINat ∷ INat a
 
-instance IsNat Zero where
+instance IsNat 'Zero where
   toInt   = 0
   toINat  = Z
 
-instance IsNat n ⇒ IsNat (Succ n) where
+instance IsNat n ⇒ IsNat ('Succ n) where
   toInt  = 1 + toInt @n
   toINat = S toINat
 

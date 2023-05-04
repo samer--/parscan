@@ -8,8 +8,8 @@ import Common
 -- Simple version, depth indexed
 
 data T d a where
-  L :: a -> T Zero a
-  B :: T d a -> T d a -> T (Succ d) a
+  L :: a -> T 'Zero a
+  B :: T d a -> T d a -> T ('Succ d) a
 
 deriving instance Functor (T d)
 deriving instance Show a => Show (T d a)
@@ -22,11 +22,11 @@ instance Traversable (T n) where
   sequenceA (L a) = L <$> a
   sequenceA (B l r) = B <$> sequenceA l <*> sequenceA r
 
-instance Applicative (T Zero) where
+instance Applicative (T 'Zero) where
   pure = L
   L f <*> L x = L (f x)
 
-instance Applicative (T n) => Applicative (T (Succ n)) where
+instance Applicative (T n) => Applicative (T ('Succ n)) where
   pure x = B (pure x) (pure x)
   B f1 f2 <*> B x1 x2 = B (f1 <*> x1) (f2 <*> x2)
 

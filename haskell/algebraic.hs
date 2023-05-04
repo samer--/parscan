@@ -48,35 +48,35 @@ instance (Scannable f, Scannable g) ⇒ Scannable (Product f g) where
    don't introduce any data constructors.
 -}
 type family TD (d ∷ Nat) ∷ Unary where
-  TD Zero     = Identity
-  TD (Succ n) = Compose Pair (TD n)
+  TD 'Zero     = Identity
+  TD ('Succ n) = Compose Pair (TD n)
 
 type family BU (d ∷ Nat) ∷ Unary where
-  BU Zero     = Identity
-  BU (Succ n) = Compose (BU n) Pair
+  BU 'Zero     = Identity
+  BU ('Succ n) = Compose (BU n) Pair
 
 type family Bush (d ∷ Nat) ∷ Unary where
-  Bush Zero     = Pair
-  Bush (Succ n) = Compose (Bush n) (Bush n)
+  Bush 'Zero     = Pair
+  Bush ('Succ n) = Compose (Bush n) (Bush n)
 
 type family AltTD (d ∷ Nat) ∷ Unary where
-  AltTD Zero     = Identity
-  AltTD (Succ n) = Product (AltTD n) (AltTD n)
+  AltTD 'Zero     = Identity
+  AltTD ('Succ n) = Product (AltTD n) (AltTD n)
 
 type FatPair = Product Identity Identity
 
 type family FatTD (d ∷ Nat) ∷ Unary where
-  FatTD Zero     = Identity
-  FatTD (Succ n) = Compose FatPair (FatTD n)
+  FatTD 'Zero     = Identity
+  FatTD ('Succ n) = Compose FatPair (FatTD n)
 
 type family FatBU (d ∷ Nat) ∷ Unary where
-  FatBU Zero     = Identity
-  FatBU (Succ n) = Compose (FatBU n) FatPair
+  FatBU 'Zero     = Identity
+  FatBU ('Succ n) = Compose (FatBU n) FatPair
 
 -- Can this work??
 type family GeneralT (h ∷ Unary → Unary) (d ∷ Nat) ∷ Unary
-type instance GeneralT _ Zero = Identity
-type instance GeneralT h (Succ n) = h (GeneralT h n)
+type instance GeneralT _ 'Zero = Identity
+type instance GeneralT h ('Succ n) = h (GeneralT h n)
 
 {- Yes! Try:
   iota :: GeneralT (Compose Pair) Three

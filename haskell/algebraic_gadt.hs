@@ -16,8 +16,8 @@ import Algebraic
 -- GADT for a tree with a generalised branch functor.
 
 data FT (b :: Unary -> Unary) (n :: Nat) (a :: *) where
-  L :: a -> FT b Zero a
-  B :: b (FT b n) a -> FT b (Succ n) a
+  L :: a -> FT b 'Zero a
+  B :: b (FT b n) a -> FT b ('Succ n) a
 
 -- deriving instance (Show a,
 --                    forall f. Functor f => Functor (b f),
@@ -26,7 +26,7 @@ data FT (b :: Unary -> Unary) (n :: Nat) (a :: *) where
 -- deriving instance (forall f. Functor f => Functor (b f),
 --                    forall f. Functor f => Show1 (b f),
 --                    Show1 (FT b n))
---                   => Show1 (FT b (Succ n))
+--                   => Show1 (FT b ('Succ n))
 -- FAIL
 
 deriving instance (forall f.Functor f => Functor (b f)) => Functor (FT b n)
@@ -56,7 +56,7 @@ instance (Functor (FT b n), Applicative (FT b n)) => Zippable (FT b n) where
 -- Now for Scannable instance
 instance Functor (FT b 'Zero) => Scannable (FT b 'Zero) where
   scan (L x) = (L mempty, x)
-instance (Functor (FT b (Succ n)), Scannable (b (FT b n))) => Scannable (FT b (Succ n)) where
+instance (Functor (FT b ('Succ n)), Scannable (b (FT b n))) => Scannable (FT b ('Succ n)) where
   scan (B y) = first B (scan y)
 
 {- Try:
