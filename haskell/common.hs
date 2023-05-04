@@ -9,7 +9,7 @@ import Control.Monad.State.Strict
 import System.IO.Unsafe
 import qualified Data.Traversable
 
-infix 9 ⊗
+infix 9 ⊗, ▲
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
@@ -23,9 +23,10 @@ instance Monoid    Int where mempty = 0
 ---------------------------------------------
 
 dup x = (x,x)
-forkl f x = (f x, x)
-forkr f x = (x, f x)
 (f ⊗ g) (x,y) = (f x, g y)
+(f ▲ g) x = (f x, g x)
+(forkl, forkr) = ((▲ id), (id ▲))
+(prod, fork) = ((⊗), (▲))
 swap (x,y) = (y,x)
 assocl (x, (y, z)) = ((x, y), z)
 transp ((a,b), (c,d)) = ((a,c), (b,d))
