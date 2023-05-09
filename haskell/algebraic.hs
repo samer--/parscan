@@ -7,6 +7,7 @@ import Data.Functor.Identity
 import Data.Functor.Const
 import Data.Functor.Compose
 import Data.Functor.Product
+import Data.Functor.Sum
 import Data.Functor.Classes
 
 import Common
@@ -40,6 +41,9 @@ instance (Scannable f, Scannable g) ⇒ Scannable (Product f g) where
     where scan2 (x , y) = ((mempty , x) , x <> y)
           joinSubscans = uncurry Pair . (mapAdd ⊗ mapAdd) .transp
 
+instance (Scannable f, Scannable g) ⇒ Scannable (Sum f g) where
+  scan (InL x) = first InL . scan $ x
+  scan (InR y) = first InR . scan $ y
 
 {- Now define some tree structures as type families
    These families (each with two clauses) are faintly reminiscent of the
