@@ -370,9 +370,12 @@ is not safely `Zippable` (consider what happens if you try to zip `InL x` with `
 Instead, we look at how to unzip some functor to a 'rezippable' pair of functors whos
 shapes are guaranteed by the type system to be the same and so safely zippable. This is
 done by introducing a shape-describing type index (like the type level length in a 'vector' 
-data type) at the point we unzip some original, non-shape indexed container. 
+data type) at the point we unzip some original, non-shape indexed container. This extra
+type is confined to some limited context, either via an existential data type or a
+polymorphic 'continuation' function
 
 It looks ok up to a point, but then falls apart when we try to apply the idea to scannable
-functors (especially compositions of functors) in `algebraic_rezip.hs`. Unfortunately my 
+functors (especially compositions of functors) in `algebraic_rezip.hs`, because I don't
+know how to introduce the necessary constraints on the the unzipped pairs. Unfortunately my 
 type-foo is not up to the job here and there will have to be some further investigation at 
 a later date.

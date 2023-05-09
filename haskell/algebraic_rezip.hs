@@ -2,7 +2,22 @@
 {-# LANGUAGE MultiParamTypeClasses, QuantifiedConstraints, UndecidableInstances #-}
 module Algebraic where
 
-{- BROKEN - This module is very broken -}
+{- BROKEN - This module is very broken
+  Here are a bunch of resources which may or may not contain clues about how to
+  do this (if it's possible). A reasonable plan of attack might be to first try
+  and work this out in Agda and then translate the results to Haskell type-level
+  facilities.
+
+
+  https://serokell.io/blog/type-families-haskell#associated-types
+  https://lexi-lambda.github.io/blog/2021/03/25/an-introduction-to-typeclass-metaprogramming/
+  https://stackoverflow.com/questions/38045091/inferring-type-class-constraint-when-using-associated-type-families
+  https://en.wikibooks.org/wiki/Haskell/Existentially_quantified_types
+  https://downloads.haskell.org/~ghc/7.8.4/docs/html/users_guide/kind-polymorphism.html
+  https://gist.github.com/AndrasKovacs/af856be6cf816e08da95
+  https://stackoverflow.com/questions/14133121/can-i-constrain-a-type-family
+  https://stackoverflow.com/questions/62989472/interaction-between-associated-type-families-and-quantified-constraints
+ -}
 
 import Control.Arrow (first, second)
 import Data.Kind
