@@ -363,3 +363,16 @@ B (Compose (B (Compose (L 0:#L 1)):#B (Compose (L 2:#L 3))))
 ghci> iota :: FT (Flip Compose Pair) Three Int
 B (Compose B (Compose B (Compose L (((0:#1):#(2:#3)):#((4:#5):#(6:#7))))))
 ```
+### module Rezip
+This module begins to address the point raised in `algebraic.hs` that we cannot compose
+the `Sum` functor with another scannable functor and get a scannable result because `Sum`
+is not safely `Zippable` (consider what happens if you try to zip `InL x` with `InR y`).
+Instead, we look at how to unzip some functor to a 'rezippable' pair of functors whos
+shapes are guaranteed by the type system to be the same and so safely zippable. This is
+done by introducing a shape-describing type index (like the type level length in a 'vector' 
+data type) at the point we unzip some original, non-shape indexed container. 
+
+It looks ok up to a point, but then falls apart when we try to apply the idea to scannable
+functors (especially compositions of functors) in `algebraic_rezip.hs`. Unfortunately my 
+type-foo is not up to the job here and there will have to be some further investigation at 
+a later date.
