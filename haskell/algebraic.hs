@@ -41,6 +41,8 @@ instance (Scannable f, Scannable g) ⇒ Scannable (Product f g) where
     where scan2 (x , y) = ((mempty , x) , x <> y)
           joinSubscans = uncurry Pair . (mapAdd ⊗ mapAdd) .transp
 
+-- This is all very well, but we cannot compose Sum with any other scannable
+-- functor because Sum is not (safely) zippable.
 instance (Scannable f, Scannable g) ⇒ Scannable (Sum f g) where
   scan (InL x) = first InL . scan $ x
   scan (InR y) = first InR . scan $ y
