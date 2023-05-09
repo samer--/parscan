@@ -9,7 +9,7 @@ import Control.Monad.State.Strict
 import System.IO.Unsafe
 import qualified Data.Traversable
 
-infix 9 ⊗, ▲
+infix 8 ⊗, ▲
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
